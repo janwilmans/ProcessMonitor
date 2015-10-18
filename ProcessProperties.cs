@@ -19,36 +19,48 @@ namespace ProcessMonitor
         private ProcessMonitor m_monitor;
         private bool m_end;
         private AutoResetEvent m_event = new AutoResetEvent(false);
-        private static long viewwidth = 200;
+        private static long viewwidth = 180; // show three minutes of data
         private double m_maximumY;
         private double m_minimumY;
         private double m_lastY;
         private long m_zoomLevel = 1;
         private bool m_userzoom = false;
+        private TextAnnotation m_annotation = new TextAnnotation();
 
         public ProcessProperties()
         {
             InitializeComponent();
             chartCPU.Series[0].Name = "CPU";
             chartPrivateBytes.Series[0].Name = "PrivateBytes";
+            chartPrivateBytes.Annotations.Add(m_annotation);
 
-            //chartCPU.ChartAreas[0].AxisX.LabelStyle.Enabled = false;
-            chartPrivateBytes.ChartAreas[0].AxisX.LabelStyle.Enabled = true;
-            //chartPrivateBytes.ChartAreas[0].AxisX.CustomLabels.Add(10.0, DateTimeIntervalType.Seconds);
-            chartPrivateBytes.ChartAreas[0].AxisX.MajorGrid.Enabled = true;
-            chartPrivateBytes.ChartAreas[0].AxisX.MajorGrid.IntervalType = DateTimeIntervalType.Number;
-            chartPrivateBytes.ChartAreas[0].AxisX.MajorGrid.Interval = 10.0;
-            //chartPrivateBytes.ChartAreas[0].AxisX.MinorGrid.Enabled = true;
-            //chartPrivateBytes.ChartAreas[0].AxisX.MinorGrid.IntervalType = DateTimeIntervalType.Seconds;
+            // horizontal 
+            var axisX = chartPrivateBytes.ChartAreas[0].AxisX;
+            axisX.MajorGrid.Enabled = true;
+            axisX.MajorGrid.IntervalType = DateTimeIntervalType.Number;
+            axisX.Interval = 10.0;
+            axisX.MajorTickMark.Enabled = true;
+            axisX.MajorTickMark.Interval = 60;
+            axisX.MajorTickMark.Size = 3;
+            axisX.LabelStyle.Enabled = true;
+            axisX.LabelStyle.Format = "RelativeTime";
+            axisX.LabelStyle.Interval = 60;
 
-            chartCPU.ChartAreas[0].AxisY.LabelStyle.Format = "{0:0,}K";
-            chartPrivateBytes.ChartAreas[0].AxisY.LabelStyle.Format = "{0:0,}K";
-            //chartPrivateBytes.ChartAreas[0].AxisX.CustomLabels.Add(1, 3, "Category 1", 1, LabelMarkStyle.LineSideMark);
+            // verical 
+            var axisY = chartPrivateBytes.ChartAreas[0].AxisY;
+            axisY.MajorGrid.Enabled = true;
+            axisY.MajorGrid.IntervalType = DateTimeIntervalType.Number;
+            axisY.LabelStyle.Enabled = true;
+            axisY.MajorTickMark.Enabled = false;
+
+            axisY.LabelStyle.Format = "FormatBytes";
+            chartPrivateBytes.FormatNumber += OnFormatNumberEvent;
 
             // events
             Closed += OnClosedEvent;
-            //this.chartPrivateBytes.AxisViewChanged += chartPrivateBytes_AxisViewChanged;
 
+            chartPrivateBytes.MouseClick += OnMouseClickEvent;
+            chartPrivateBytes.MouseDoubleClick += OnMouseDoubleClickEvent;
             this.MouseWheel += new MouseEventHandler(OnMouseWheel);
 
             m_monitor = ProcessMonitor.CreateProcessMonitor("DebugView++");
@@ -60,6 +72,7 @@ namespace ProcessMonitor
 
         private void OnClosedEvent(object sender, EventArgs e)
         {
+            ClearTooltips();
             m_end = true;
             m_event.Set();
             m_thread.Join();
@@ -119,6 +132,9 @@ namespace ProcessMonitor
         {
             WaitHandle waitHandle = new AutoResetEvent(false);
 
+            m_minimumY = m_monitor.GetPrivateBytes();
+            m_maximumY = m_minimumY;
+
             int seconds = 0;
             try
             {
@@ -128,7 +144,8 @@ namespace ProcessMonitor
                     m_monitor.Refresh();
                     var bytes = m_monitor.GetPrivateBytes();
                     LogMemoryDeltas();
-                    this.UIThreadAsync(() => ScrollChart(seconds, bytes));
+                    var s = seconds;    // keep s local to the lambda
+                    this.UIThreadAsync(() => ScrollChart(s, bytes));
                     seconds = seconds + 1;
                 }
             }
@@ -142,13 +159,13 @@ namespace ProcessMonitor
         private void ScrollChart(double seconds, double bytes)
         {
             if (m_end) return;
-            var serie = this.chartPrivateBytes.Series[0];
+            m_annotation.Text = "Private Bytes: " + FormatBytes2((long)bytes);
+            var serie = chartPrivateBytes.Series[0];
             Update(serie.Points, seconds, bytes);
 
-            var area = this.chartPrivateBytes.ChartAreas[0];
-
+            var area = chartPrivateBytes.ChartAreas[0];
             // 'scroll' the view 1 position to the left
-            area.AxisX.Maximum = Math.Min(serie.Points.Count, viewwidth);
+            area.AxisX.Maximum = seconds;
             area.AxisX.Minimum = area.AxisX.Maximum - viewwidth;
         }
 
@@ -169,11 +186,6 @@ namespace ProcessMonitor
             {
                 m_zoomLevel = 1;
                 m_userzoom = false;
-            }
-
-            if (!m_userzoom)
-            {
-                AutoScaleY(m_lastY);
             }
             return m_userzoom;
         }
@@ -197,13 +209,30 @@ namespace ProcessMonitor
 
         private void OnMouseWheel(object sender, MouseEventArgs e)
         {
+            var axisY = chartPrivateBytes.ChartAreas[0].AxisY;
             if (UserZoom(e.Delta))
             {
-                var area = this.chartPrivateBytes.ChartAreas[0];
                 double perc = ConvertZoomLevelToPercentage(m_zoomLevel);
-                area.AxisY.Minimum = Math.Max(0, m_lastY * (1.0 - perc));
-                area.AxisY.Maximum = m_lastY * (1.0 + perc);
+                var last = Util.RoundUp((long)m_lastY, 8 * 1024);
+                var min = Math.Max(0, last * (1.0 - perc));
+                var max = (last * (1.0 + perc));
+                SetYRange(min, max);
+                axisY.LabelStyle.Format = "RelativeBytes";
             }
+            else
+            {
+                AutoScaleY(m_lastY);
+                axisY.LabelStyle.Format = "FormatBytes";
+            }
+        }
+
+        private void SetYRange(double minValue, double maxValue)
+        {
+            var area = chartPrivateBytes.ChartAreas[0];
+            area.AxisY.Minimum = (long)minValue;
+            area.AxisY.Maximum = (long)maxValue;
+            var interval = (area.AxisY.Maximum - area.AxisY.Minimum) / 4;
+            chartPrivateBytes.ChartAreas[0].AxisY.Interval = interval;
         }
 
         private void Update(DataPointCollection points, double position, double value)
@@ -222,43 +251,73 @@ namespace ProcessMonitor
             if (m_userzoom) return;
             m_minimumY = Math.Min(m_minimumY, value);
             m_maximumY = Math.Max(m_maximumY, value);
-            var area = this.chartPrivateBytes.ChartAreas[0];
-            area.AxisY.Minimum = m_minimumY;
-            area.AxisY.Maximum = m_maximumY * 1.1; // +10% at the top
+            SetYRange(0, Util.NextPow2( (long) (m_maximumY * 1.25))); // at least +25% at the top
         }
 
-        //private void chartPrivateBytes_AxisViewChanged(object sender, ViewEventArgs e)
-        //{
-        //    Log.WriteLine(" chartPrivateBytes_AxisViewChanged...");
+        private List<ToolTip> tooltips = new List<ToolTip>();
+        private void ClearTooltips()
+        {
+            foreach (var tooltip in tooltips)
+                tooltip.RemoveAll();
+            tooltips.Clear();
+        }
 
-        //    if (e.Axis.AxisName == AxisName.X)
-        //    {
-        //        int start = (int)e.Axis.ScaleView.ViewMinimum;
-        //        int end = (int)e.Axis.ScaleView.ViewMaximum;
+        private void OnMouseClickEvent(object sender, MouseEventArgs e)
+        {
+            if (e.Button == System.Windows.Forms.MouseButtons.Right)
+            {
+                ClearTooltips();
+            }
+        }
 
-        //        foreach (ChartArea area in this.chartPrivateBytes.ChartAreas)
-        //        {
-        //            List<double> allNumbers = new List<double>();
+        private void OnMouseDoubleClickEvent(object sender, MouseEventArgs e)
+        {
+            var pos = e.Location;
+            var clickPosition = pos;
+            var area = chartPrivateBytes.ChartAreas[0];
+            var xVal = area.AxisX.PixelPositionToValue(pos.X);
+            var yVal = area.AxisY.PixelPositionToValue(pos.Y);
 
-        //            foreach (Series item in this.chartPrivateBytes.Series)
-        //            {
-        //                if (item.ChartArea == area.Name)
-        //                    allNumbers.AddRange(item.Points.Where((x, i) => i >= start && i <= end).Select(x => x.YValues[0]).ToList());
-        //            }
+            ToolTip newtooltip = new ToolTip();
+            newtooltip.Show(FormatBytes2((long)yVal), chartPrivateBytes, e.Location.X, e.Location.Y - 15);
+            tooltips.Add(newtooltip);
+        }
 
-        //            double ymin = allNumbers.Min();
-        //            double ymax = allNumbers.Max();
-
-        //            if (ymax > ymin)
-        //            {
-        //                double offset = 0.02 * (ymax - ymin);
-        //                area.AxisY.Maximum = ymax + offset;
-        //                area.AxisY.Minimum = ymin - offset;
-        //            }
-        //        }
-        //    }
-        //}
-
+        private void OnFormatNumberEvent(object sender, FormatNumberEventArgs e)
+        {
+            if (e.ElementType == ChartElementType.AxisLabels)
+            {
+                if (e.Format == "FormatBytes")
+                {
+                    e.LocalizedValue = FormatBytes((long)e.Value);
+                }
+                else if (e.Format == "RelativeTime")
+                {
+                    var position = (long)e.Value;
+                    var relativePos = position - chartPrivateBytes.ChartAreas[0].AxisX.Minimum - viewwidth;
+                    e.LocalizedValue = string.Format("{0}", relativePos);
+                }
+                else if (e.Format == "RelativeBytes")
+                {
+                    var height = chartPrivateBytes.ChartAreas[0].AxisY.Maximum - chartPrivateBytes.ChartAreas[0].AxisY.Minimum;
+                    long position = (long) Math.Floor(e.Value);
+                    long relativePos = (long) Math.Floor(position - m_lastY);
+                    var bytes = FormatBytes(relativePos);
+                    if (relativePos == 0)
+                    {
+                        e.LocalizedValue = FormatBytes(position);
+                    }
+                    else if (relativePos > 0)
+                    {
+                        e.LocalizedValue = string.Format("+{0}", bytes);
+                    }
+                    else
+                    {
+                        e.LocalizedValue = string.Format("-{0}", bytes);
+                    }
+                }
+            }
+        }
 
     }
 }

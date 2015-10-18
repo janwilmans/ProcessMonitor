@@ -26,6 +26,29 @@ namespace ProcessMonitor
         }
     }
 
+    public static class Util
+    {
+        public static long RoundUp(long numToRound, long multiple)
+        {
+            if (multiple == 0)
+            {
+                return numToRound;
+            }
+
+            long remainder = numToRound % multiple;
+            if (remainder == 0)
+                return numToRound;
+            return numToRound + multiple - remainder;
+        }
+
+        public static long NextPow2(long value)
+        {
+            return (long)Math.Pow(2, Math.Ceiling(Math.Log(value) / Math.Log(2)));
+
+        }
+    }
+
+
     static class Program
     {
 

@@ -33,9 +33,9 @@
             System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
             System.Windows.Forms.DataVisualization.Charting.Series series2 = new System.Windows.Forms.DataVisualization.Charting.Series();
             this.chartCPU = new System.Windows.Forms.DataVisualization.Charting.Chart();
-            this.chartPrivateBytes = new System.Windows.Forms.DataVisualization.Charting.Chart();
+            chartPrivateBytes = new System.Windows.Forms.DataVisualization.Charting.Chart();
             ((System.ComponentModel.ISupportInitialize)(this.chartCPU)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.chartPrivateBytes)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(chartPrivateBytes)).BeginInit();
             this.SuspendLayout();
             // 
             // chartCPU
@@ -57,31 +57,33 @@
             // chartPrivateBytes
             // 
             chartArea2.Name = "ChartPrivateBytes";
-            this.chartPrivateBytes.ChartAreas.Add(chartArea2);
-            this.chartPrivateBytes.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.chartPrivateBytes.Location = new System.Drawing.Point(0, 129);
-            this.chartPrivateBytes.Name = "chartPrivateBytes";
-            this.chartPrivateBytes.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.SemiTransparent;
+            chartPrivateBytes.ChartAreas.Add(chartArea2);
+            chartPrivateBytes.Dock = System.Windows.Forms.DockStyle.Fill;
+            chartPrivateBytes.Location = new System.Drawing.Point(0, 129);
+            chartPrivateBytes.Name = "chartPrivateBytes";
+            chartPrivateBytes.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.SemiTransparent;
             series2.ChartArea = "ChartPrivateBytes";
-            series2.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
+            series2.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
             series2.Name = "PrivateBytes";
-            this.chartPrivateBytes.Series.Add(series2);
-            this.chartPrivateBytes.Size = new System.Drawing.Size(784, 304);
-            this.chartPrivateBytes.TabIndex = 1;
-            this.chartPrivateBytes.Text = "chart2";
+            series2.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.UInt64;
+            series2.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.UInt64;
+            chartPrivateBytes.Series.Add(series2);
+            chartPrivateBytes.Size = new System.Drawing.Size(784, 304);
+            chartPrivateBytes.TabIndex = 1;
+            chartPrivateBytes.Text = "chart2";
             // 
             // ProcessProperties
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(784, 433);
-            this.Controls.Add(this.chartPrivateBytes);
+            this.Controls.Add(chartPrivateBytes);
             this.Controls.Add(this.chartCPU);
             this.Name = "ProcessProperties";
             this.Text = "ProcessProperties";
             this.TopMost = true;
             ((System.ComponentModel.ISupportInitialize)(this.chartCPU)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.chartPrivateBytes)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(chartPrivateBytes)).EndInit();
             this.ResumeLayout(false);
 
         }

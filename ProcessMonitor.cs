@@ -67,6 +67,10 @@ namespace ProcessMonitor
         {
             return m_process.WorkingSet64;
         }
+        public long GetHandleCount()
+        {
+            return m_process.HandleCount;
+        }
 
         public float CPU()
         {
