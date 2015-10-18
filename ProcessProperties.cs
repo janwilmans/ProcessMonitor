@@ -178,22 +178,29 @@ namespace ProcessMonitor
             return m_userzoom;
         }
 
+        private double ConvertZoomLevelToPercentage(long zoomLevel)
+        {
+            // this starts the user zoom off at +90% / -90% 
+            // moves in 10 steps to +10% / -10% 
+            // continuing in finer steps of 1/(N-9)
+            double perc = 1.0;
+            if (zoomLevel < 10)
+            {
+                perc = (10 - (zoomLevel - 1)) / 10.0;
+            }
+            else
+            {
+                perc = 1.0 / ((zoomLevel - 9) * 10.0);
+            }
+            return perc;
+        }
+
         private void OnMouseWheel(object sender, MouseEventArgs e)
         {
             if (UserZoom(e.Delta))
             {
-                Log.WriteLine("m_zoomLevel " + m_zoomLevel);
                 var area = this.chartPrivateBytes.ChartAreas[0];
-
-                double perc = 1.0;
-                if (m_zoomLevel < 10)
-                {
-                    perc = (10 - (m_zoomLevel - 1)) / 10.0;
-                }
-                else
-                {
-                    perc = 1.0 / ((m_zoomLevel-9) * 10.0);
-                }
+                double perc = ConvertZoomLevelToPercentage(m_zoomLevel);
                 area.AxisY.Minimum = Math.Max(0, m_lastY * (1.0 - perc));
                 area.AxisY.Maximum = m_lastY * (1.0 + perc);
             }
