@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Threading;
 using System.Windows.Forms.DataVisualization.Charting;
-using System.Collections.ObjectModel;
 
 namespace ProcessMonitor
 {
@@ -78,53 +77,16 @@ namespace ProcessMonitor
             m_thread.Join();
         }
 
-        public static readonly ReadOnlyCollection<string> units = new ReadOnlyCollection<string>(
-          new string[] { "bytes", "kB", "MB", "GB", "TB", "PB", "EB", null } );
-    
-        private string FormatBytes(long bytes)
-        {
-            long absValue = Math.Abs(bytes);
-	        const int kb = 1024;
-            int index = 0;
-
-            while ((absValue / kb) > 0 && units[index] != null)
-	        {
-                absValue = absValue / kb;
-                ++index;
-            }
-            return string.Format("{0} {1}", absValue, units[index]);
-        }
-
-        private string FormatBytes2(long bytes)
-        {
-            long absValue = Math.Abs(bytes);
-            const int kb = 1024;
-            const int treshold = 64;
-            int index = 0;
-
-            while ((absValue / kb) >= treshold && units[index] != null)
-            {
-                absValue = absValue / kb;
-                ++index;
-            }
-            return string.Format("{0} {1}", absValue, units[index]);
-        }
-
-        private void testNumber(long number)
-        {
-            Log.WriteLine(string.Format("{0} = {1} or {2}", number, FormatBytes(number), FormatBytes2(number)));
-        }
-
         private void LogMemoryDeltas()
         {
             var delta = m_monitor.GetPrivateBytesDelta();
             if (delta > 0)
             {
-                Log.WriteLine("[" + m_monitor.GetName() + "] allocated " + FormatBytes2(delta));
+                Log.WriteLine("[" + m_monitor.GetName() + "] allocated " + Util.FormatBytes3(delta));
             }
             else if (delta < 0)
             {
-                Log.WriteLine("[" + m_monitor.GetName() + "] released " + FormatBytes2(delta));
+                Log.WriteLine("[" + m_monitor.GetName() + "] released " + Util.FormatBytes3(delta));
             }
         }
 
@@ -159,7 +121,10 @@ namespace ProcessMonitor
         private void ScrollChart(double seconds, double bytes)
         {
             if (m_end) return;
-            m_annotation.Text = "Private Bytes: " + FormatBytes2((long)bytes);
+            m_annotation.Text = "Private Bytes: " + Util.FormatBytes3((long)bytes);
+            m_annotation.X = 10;
+            m_annotation.Y = 5;
+
             var serie = chartPrivateBytes.Series[0];
             Update(serie.Points, seconds, bytes);
 
@@ -175,18 +140,12 @@ namespace ProcessMonitor
             if (delta > 0.0)
             {
                 m_zoomLevel = m_zoomLevel + 1;
-                m_userzoom = true;
             }
             else
             {
-                m_zoomLevel = m_zoomLevel - 1;
-                m_userzoom = true;
+                m_zoomLevel = Math.Max(1, m_zoomLevel - 1);
             }
-            if (m_zoomLevel <= 0)
-            {
-                m_zoomLevel = 1;
-                m_userzoom = false;
-            }
+            m_userzoom = (m_zoomLevel > 1);
             return m_userzoom;
         }
 
@@ -209,25 +168,28 @@ namespace ProcessMonitor
 
         private void OnMouseWheel(object sender, MouseEventArgs e)
         {
+            Log.WriteLine("m_zoomLevel: " + m_zoomLevel);
             var axisY = chartPrivateBytes.ChartAreas[0].AxisY;
             if (UserZoom(e.Delta))
             {
                 double perc = ConvertZoomLevelToPercentage(m_zoomLevel);
-                var last = Util.RoundUp((long)m_lastY, 8 * 1024);
-                var min = Math.Max(0, last * (1.0 - perc));
-                var max = (last * (1.0 + perc));
+                var last = m_lastY; //.RoundUp((long)m_lastY, 8 * 1024);
+                var min = last * (1.0 - perc);
+                var max = last * (1.0 + perc);
                 SetYRange(min, max);
-                axisY.LabelStyle.Format = "RelativeBytes";
+                //axisY.LabelStyle.Format = "RelativeBytes";
             }
             else
             {
                 AutoScaleY(m_lastY);
-                axisY.LabelStyle.Format = "FormatBytes";
+                //axisY.LabelStyle.Format = "FormatBytes";
             }
         }
 
         private void SetYRange(double minValue, double maxValue)
         {
+            Log.WriteLine("SetYRange: " + minValue + ", " + maxValue);
+
             var area = chartPrivateBytes.ChartAreas[0];
             area.AxisY.Minimum = (long)minValue;
             area.AxisY.Maximum = (long)maxValue;
@@ -278,8 +240,10 @@ namespace ProcessMonitor
             var xVal = area.AxisX.PixelPositionToValue(pos.X);
             var yVal = area.AxisY.PixelPositionToValue(pos.Y);
 
+            // todo: lookup nearest real point on the graph and put a marker on it!
+
             ToolTip newtooltip = new ToolTip();
-            newtooltip.Show(FormatBytes2((long)yVal), chartPrivateBytes, e.Location.X, e.Location.Y - 15);
+            newtooltip.Show(Util.FormatBytes3((long)yVal), chartPrivateBytes, e.Location.X, e.Location.Y - 15);
             tooltips.Add(newtooltip);
         }
 
@@ -289,7 +253,7 @@ namespace ProcessMonitor
             {
                 if (e.Format == "FormatBytes")
                 {
-                    e.LocalizedValue = FormatBytes((long)e.Value);
+                    e.LocalizedValue = Util.FormatBytes2((long)e.Value);
                 }
                 else if (e.Format == "RelativeTime")
                 {
@@ -302,10 +266,10 @@ namespace ProcessMonitor
                     var height = chartPrivateBytes.ChartAreas[0].AxisY.Maximum - chartPrivateBytes.ChartAreas[0].AxisY.Minimum;
                     long position = (long) Math.Floor(e.Value);
                     long relativePos = (long) Math.Floor(position - m_lastY);
-                    var bytes = FormatBytes(relativePos);
+                    var bytes = Util.FormatBytes2(relativePos);
                     if (relativePos == 0)
                     {
-                        e.LocalizedValue = FormatBytes(position);
+                        e.LocalizedValue = Util.FormatBytes2(position);
                     }
                     else if (relativePos > 0)
                     {
