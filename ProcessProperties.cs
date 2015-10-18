@@ -23,7 +23,7 @@ namespace ProcessMonitor
         private double m_maximumY;
         private double m_minimumY;
         private double m_lastY;
-        private long m_zoomLevel;
+        private long m_zoomLevel = 1;
         private bool m_userzoom = false;
 
         public ProcessProperties()
@@ -182,9 +182,19 @@ namespace ProcessMonitor
         {
             if (UserZoom(e.Delta))
             {
+                Log.WriteLine("m_zoomLevel " + m_zoomLevel);
                 var area = this.chartPrivateBytes.ChartAreas[0];
-                double perc = 1.0 / (m_zoomLevel * 10.0);
-                area.AxisY.Minimum = Math.Min(0, m_lastY * (1.0 - perc));
+
+                double perc = 1.0;
+                if (m_zoomLevel < 10)
+                {
+                    perc = (10 - (m_zoomLevel - 1)) / 10.0;
+                }
+                else
+                {
+                    perc = 1.0 / ((m_zoomLevel-9) * 10.0);
+                }
+                area.AxisY.Minimum = Math.Max(0, m_lastY * (1.0 - perc));
                 area.AxisY.Maximum = m_lastY * (1.0 + perc);
             }
         }
