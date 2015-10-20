@@ -26,12 +26,13 @@ namespace ProcessMonitor
         private bool m_userzoom = false;
         private TextAnnotation m_annotation = new TextAnnotation();
 
-        public ProcessProperties()
+        public ProcessProperties(ProcessInfo info)
         {
             InitializeComponent();
-            chartCPU.Series[0].Name = "CPU";
             chartPrivateBytes.Series[0].Name = "PrivateBytes";
-            chartPrivateBytes.Annotations.Add(m_annotation);
+            //chartPrivateBytes.Annotations.Add(m_annotation);
+            this.Text = "Monitor [ " + info.Name + " ]";
+            m_status.Text = "Process: " + info.Name + ", PID: " + info.PID;
 
             // horizontal 
             var axisX = chartPrivateBytes.ChartAreas[0].AxisX;
@@ -61,8 +62,8 @@ namespace ProcessMonitor
             chartPrivateBytes.MouseClick += OnMouseClickEvent;
             chartPrivateBytes.MouseDoubleClick += OnMouseDoubleClickEvent;
             this.MouseWheel += new MouseEventHandler(OnMouseWheel);
-
-            m_monitor = ProcessMonitor.CreateProcessMonitor("DebugView++");
+            
+            m_monitor = ProcessMonitor.CreateProcessMonitor(info.PID);
             m_thread = new Thread(() => MonitoringLoop("foo"));
             m_thread.IsBackground = true;
             m_end = false;
@@ -93,7 +94,6 @@ namespace ProcessMonitor
         public void MonitoringLoop(string processname)
         {
             WaitHandle waitHandle = new AutoResetEvent(false);
-
             m_minimumY = m_monitor.GetPrivateBytes();
             m_maximumY = m_minimumY;
 
@@ -102,13 +102,13 @@ namespace ProcessMonitor
             {
                 for (; !m_end; )
                 {
-                    m_event.WaitOne(1000);
                     m_monitor.Refresh();
                     var bytes = m_monitor.GetPrivateBytes();
                     LogMemoryDeltas();
                     var s = seconds;    // keep s local to the lambda
                     this.UIThreadAsync(() => ScrollChart(s, bytes));
                     seconds = seconds + 1;
+                    m_event.WaitOne(1000);
                 }
             }
             catch (Exception e)
@@ -121,9 +121,6 @@ namespace ProcessMonitor
         private void ScrollChart(double seconds, double bytes)
         {
             if (m_end) return;
-            m_annotation.Text = "Private Bytes: " + Util.FormatBytes3((long)bytes);
-            m_annotation.X = 10;
-            m_annotation.Y = 5;
 
             var serie = chartPrivateBytes.Series[0];
             Update(serie.Points, seconds, bytes);
@@ -132,6 +129,7 @@ namespace ProcessMonitor
             // 'scroll' the view 1 position to the left
             area.AxisX.Maximum = seconds;
             area.AxisX.Minimum = area.AxisX.Maximum - viewwidth;
+            serie.Name = "Private Bytes: " + Util.FormatBytes4((long)bytes);
         }
 
         private bool UserZoom(double delta)
@@ -168,7 +166,6 @@ namespace ProcessMonitor
 
         private void OnMouseWheel(object sender, MouseEventArgs e)
         {
-            Log.WriteLine("m_zoomLevel: " + m_zoomLevel);
             var axisY = chartPrivateBytes.ChartAreas[0].AxisY;
             if (UserZoom(e.Delta))
             {
@@ -188,8 +185,6 @@ namespace ProcessMonitor
 
         private void SetYRange(double minValue, double maxValue)
         {
-            Log.WriteLine("SetYRange: " + minValue + ", " + maxValue);
-
             var area = chartPrivateBytes.ChartAreas[0];
             area.AxisY.Minimum = (long)minValue;
             area.AxisY.Maximum = (long)maxValue;

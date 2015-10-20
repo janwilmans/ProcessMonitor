@@ -10,15 +10,42 @@ using System.Windows.Forms;
 using System.Threading;
 using System.Diagnostics;
 using System.Collections;
+using BrightIdeasSoftware;
 
 namespace ProcessMonitor
 {
     public partial class MainForm : Form
     {
-        private List<Process> m_processes = new List<Process>();
+        private List<ProcessInfo> m_processes = new List<ProcessInfo>();
+        private TypedObjectListView<ProcessInfo> m_typedProcessTree;
+
         public MainForm()
         {
             InitializeComponent();
+            m_typedProcessTree = new TypedObjectListView<ProcessInfo>(m_processTree);
+
+            m_toolstrip.Text = "Running as administator in 64-bit mode";
+            if (!Util.IsRunningAsAdministrator())
+            {
+                m_toolstrip.Text = "Notice: Not running as admin may result in lack of details";
+            }
+
+            m_processTree.FullRowSelect = true;
+            m_processTree.RowFormatter = delegate(OLVListItem olvi)
+            {
+                ProcessInfo info = (ProcessInfo)olvi.RowObject;
+                olvi.UseItemStyleForSubItems = false;
+                if (info.PrivateBytes > 100*1024*1024)
+                {
+                    olvi.SubItems[2].ForeColor = Color.Red;
+                }
+            };
+
+            KeyPreview = true;
+            KeyDown += OnKeyDownEvent;
+
+            m_processTree.DoubleClick += OnDoubleClickEvent;
+            
             //ProcessProperties props = new ProcessProperties();
             //props.Show();
 
@@ -35,33 +62,60 @@ namespace ProcessMonitor
             RefreshProcessList();
         }
 
+        private void OnDoubleClickEvent(object sender, EventArgs e)
+        {
+            ProcessInfo info = m_processTree.GetItem(m_processTree.SelectedIndex).RowObject as ProcessInfo;
+            ProcessProperties props = new ProcessProperties(info);
+            props.Show();
+        }
+
+        private void OnKeyDownEvent(object sender, KeyEventArgs e)
+        {
+            Trace.WriteLine("keeeey");
+            if (e.KeyCode == Keys.F5)
+            {
+                Trace.WriteLine("keeeey F5");
+                RefreshProcessList();
+            }
+        }
+
         public void RefreshProcessList()
         {
             m_processes.Clear();
-            m_processes.AddRange(Process.GetProcesses());
-
-            m_processes.Sort(x => x.ProcessName);
+            foreach (var process in Process.GetProcesses())
+            {
+                ProcessInfo info = new ProcessInfo();
+                info.Name = process.ProcessName;
+                info.PID = process.Id;
+                //info.Owner = process.GetOwner();  // quite slow
+                info.PrivateBytes = process.PrivateMemorySize64;
+                info.Threads = process.Threads.Count;
+                info.Handles = process.HandleCount;
+                try
+                {
+                    info.MainModuleFilename = process.MainModule.FileName;
+                }
+                catch (Exception)
+                {
+                    //info.MainModuleFilename = "<" + e.Message + ">";
+                }
+                m_processes.Add(info);
+            }
+            m_processes.Sort(x => x.Name);
             this.m_processTree.SetObjects(m_processes);
         }
-
-        //private static string GetCommandLine(this Process process)
-        //{
-        //    var commandLine = new StringBuilder(process.MainModule.FileName);
-
-        //    commandLine.Append(" ");
-        //    using (var searcher = new ManagementObjectSearcher("SELECT CommandLine FROM Win32_Process WHERE ProcessId = " + process.Id))
-        //    {
-        //        foreach (var @object in searcher.Get())
-        //        {
-        //            commandLine.Append(@object["CommandLine"]);
-        //            commandLine.Append(" ");
-        //        }
-        //    }
-
-        //    return commandLine.ToString();
-        //}
-
-
-
     }
+
+    public class ProcessInfo
+    {
+        public string Name { get; set; }
+        public int PID { get; set; }
+        public long PrivateBytes { get; set; }
+        public string Memory { get { return Util.FormatBytes4(PrivateBytes); } }
+        //public string Owner { get; set; }
+        public long Threads { get; set; }
+        public long Handles { get; set; }
+        public string MainModuleFilename { get; set; }
+    }
+
 }

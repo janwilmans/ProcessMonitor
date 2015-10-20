@@ -29,37 +29,31 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            this.olvName = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
-            this.olvRam = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
             this.m_processTree = new BrightIdeasSoftware.TreeListView();
+            this.olvProcess = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
+            this.olvPID = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
+            this.olvPrivateBytes = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
             this.olvThreads = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
             this.olvHandles = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
             this.olvPath = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
+            this.m_statusStrip = new System.Windows.Forms.StatusStrip();
+            this.m_toolstrip = new System.Windows.Forms.ToolStripStatusLabel();
             ((System.ComponentModel.ISupportInitialize)(this.m_processTree)).BeginInit();
+            this.m_statusStrip.SuspendLayout();
             this.SuspendLayout();
-            // 
-            // olvName
-            // 
-            this.olvName.AspectName = "ProcessName";
-            this.olvName.Text = "Process";
-            this.olvName.Width = 200;
-            // 
-            // olvRam
-            // 
-            this.olvRam.AspectName = "PrivateMemorySize64";
-            this.olvRam.Text = "Private bytes";
-            this.olvRam.Width = 140;
             // 
             // m_processTree
             // 
-            this.m_processTree.AllColumns.Add(this.olvName);
-            this.m_processTree.AllColumns.Add(this.olvRam);
+            this.m_processTree.AllColumns.Add(this.olvProcess);
+            this.m_processTree.AllColumns.Add(this.olvPID);
+            this.m_processTree.AllColumns.Add(this.olvPrivateBytes);
             this.m_processTree.AllColumns.Add(this.olvThreads);
             this.m_processTree.AllColumns.Add(this.olvHandles);
             this.m_processTree.AllColumns.Add(this.olvPath);
             this.m_processTree.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.olvName,
-            this.olvRam,
+            this.olvProcess,
+            this.olvPID,
+            this.olvPrivateBytes,
             this.olvThreads,
             this.olvHandles,
             this.olvPath});
@@ -68,49 +62,97 @@
             this.m_processTree.Name = "m_processTree";
             this.m_processTree.OwnerDraw = true;
             this.m_processTree.ShowGroups = false;
-            this.m_processTree.Size = new System.Drawing.Size(752, 423);
+            this.m_processTree.Size = new System.Drawing.Size(756, 541);
             this.m_processTree.TabIndex = 0;
             this.m_processTree.UseCompatibleStateImageBehavior = false;
             this.m_processTree.View = System.Windows.Forms.View.Details;
             this.m_processTree.VirtualMode = true;
             // 
+            // olvProcess
+            // 
+            this.olvProcess.AspectName = "Name";
+            this.olvProcess.Text = "Process";
+            this.olvProcess.Width = 250;
+            // 
+            // olvPID
+            // 
+            this.olvPID.AspectName = "PID";
+            this.olvPID.HeaderTextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.olvPID.Text = "PID";
+            this.olvPID.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            // 
+            // olvPrivateBytes
+            // 
+            this.olvPrivateBytes.AspectName = "Memory";
+            this.olvPrivateBytes.AspectToStringFormat = "";
+            this.olvPrivateBytes.HeaderTextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.olvPrivateBytes.Text = "Memory";
+            this.olvPrivateBytes.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+            this.olvPrivateBytes.Width = 136;
+            // 
             // olvThreads
             // 
             this.olvThreads.AspectName = "Threads";
+            this.olvThreads.HeaderTextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.olvThreads.Text = "Threads";
+            this.olvThreads.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // olvHandles
             // 
-            this.olvHandles.AspectName = "HandleCount";
+            this.olvHandles.AspectName = "Handles";
+            this.olvHandles.HeaderTextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.olvHandles.Text = "Handles";
+            this.olvHandles.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
             // olvPath
             // 
-            this.olvPath.AspectName = "MainModule.FileName";
+            this.olvPath.AspectName = "MainModuleFilename";
+            this.olvPath.FillsFreeSpace = true;
             this.olvPath.Text = "Path";
-            this.olvPath.Width = 266;
+            // 
+            // m_statusStrip
+            // 
+            this.m_statusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.m_toolstrip});
+            this.m_statusStrip.Location = new System.Drawing.Point(0, 519);
+            this.m_statusStrip.Name = "m_statusStrip";
+            this.m_statusStrip.Size = new System.Drawing.Size(756, 22);
+            this.m_statusStrip.TabIndex = 1;
+            // 
+            // m_toolstrip
+            // 
+            this.m_toolstrip.Name = "m_toolstrip";
+            this.m_toolstrip.Size = new System.Drawing.Size(118, 17);
+            this.m_toolstrip.Text = "toolStripStatusLabel1";
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(752, 423);
+            this.ClientSize = new System.Drawing.Size(756, 541);
+            this.Controls.Add(this.m_statusStrip);
             this.Controls.Add(this.m_processTree);
             this.Name = "MainForm";
             this.Text = "Process Monitor";
             ((System.ComponentModel.ISupportInitialize)(this.m_processTree)).EndInit();
+            this.m_statusStrip.ResumeLayout(false);
+            this.m_statusStrip.PerformLayout();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
         #endregion
 
-        private BrightIdeasSoftware.OLVColumn olvName;
-        private BrightIdeasSoftware.OLVColumn olvRam;
         private BrightIdeasSoftware.TreeListView m_processTree;
+        private BrightIdeasSoftware.OLVColumn olvProcess;
+        private BrightIdeasSoftware.OLVColumn olvPrivateBytes;
         private BrightIdeasSoftware.OLVColumn olvThreads;
         private BrightIdeasSoftware.OLVColumn olvHandles;
         private BrightIdeasSoftware.OLVColumn olvPath;
+        private System.Windows.Forms.StatusStrip m_statusStrip;
+        private BrightIdeasSoftware.OLVColumn olvPID;
+        private System.Windows.Forms.ToolStripStatusLabel m_toolstrip;
 
 
 

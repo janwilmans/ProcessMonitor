@@ -12,7 +12,7 @@ namespace ProcessMonitor
     {
         static public ProcessMonitor CreateProcessMonitor(int pid)
         {
-            Process processById = Process.GetProcessById(1234);
+            Process processById = Process.GetProcessById(pid);
             if (processById == null)
                 throw new Exception("No process with pid " + pid);
             return new ProcessMonitor(processById);
