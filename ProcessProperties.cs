@@ -182,7 +182,7 @@ namespace ProcessMonitor
             else
             {
                 AutoScaleY(m_lastY);
-                //axisY.LabelStyle.Format = "FormatBytes";
+                axisY.LabelStyle.Format = "FormatBytes";
             }
         }
 
@@ -194,7 +194,9 @@ namespace ProcessMonitor
             area.AxisY.Minimum = (long)minValue;
             area.AxisY.Maximum = (long)maxValue;
             var interval = (area.AxisY.Maximum - area.AxisY.Minimum) / 4;
-            chartPrivateBytes.ChartAreas[0].AxisY.Interval = interval;
+            var powInterval = Util.NextPow2((long) interval);
+            chartPrivateBytes.ChartAreas[0].AxisY.Interval = powInterval;
+            //chartPrivateBytes.ChartAreas[0].AxisY.IntervalOffset = 2 * powInterval;
         }
 
         private void Update(DataPointCollection points, double position, double value)
@@ -264,8 +266,8 @@ namespace ProcessMonitor
                 else if (e.Format == "RelativeBytes")
                 {
                     var height = chartPrivateBytes.ChartAreas[0].AxisY.Maximum - chartPrivateBytes.ChartAreas[0].AxisY.Minimum;
-                    long position = (long) Math.Floor(e.Value);
-                    long relativePos = (long) Math.Floor(position - m_lastY);
+                    long position = (long) (e.Value);
+                    long relativePos = (long) (position - m_lastY);
                     var bytes = Util.FormatBytes2(relativePos);
                     if (relativePos == 0)
                     {

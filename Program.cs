@@ -94,6 +94,12 @@ namespace ProcessMonitor
             }
             return string.Format("{0} {1}", absValue, units[index]);
         }
+
+        public static void Sort<T, U>(this List<T> list, Func<T, U> expression)
+        where U : IComparable<U>
+        {
+            list.Sort((x, y) => expression.Invoke(x).CompareTo(expression.Invoke(y)));
+        }
     }
     
     static class Program
