@@ -25,6 +25,7 @@ namespace ProcessMonitor
         private long m_zoomLevel = 1;
         private bool m_userzoom = false;
         private TextAnnotation m_annotation = new TextAnnotation();
+        private bool m_cursorEnabled = false;
 
         private void InitChart(Chart c)
         {
@@ -48,6 +49,9 @@ namespace ProcessMonitor
             axisY.MajorTickMark.Enabled = false;
 
             c.FormatNumber += OnFormatNumberEvent;
+
+            //c.Series[0].ToolTip = "#VALX, #VALY";
+            // https://bitbucket.org/grumly57/mschartfriend
         }
 
         public ProcessProperties(ProcessInfo info)
@@ -65,16 +69,48 @@ namespace ProcessMonitor
 
             // events
             Closed += OnClosedEvent;
-
+            MouseWheel += new MouseEventHandler(OnMouseWheel);
+            
             chartPrivateBytes.MouseClick += OnMouseClickEvent;
             chartPrivateBytes.MouseDoubleClick += OnMouseDoubleClickEvent;
-            this.MouseWheel += new MouseEventHandler(OnMouseWheel);
+            chartPrivateBytes.MouseMove += OnMouseMoveEvent;
             
             m_process = ProcessMonitor.CreateProcessMonitor(info.PID);
-            m_thread = new Thread(() => MonitoringLoop("foo"));
+            m_thread = new Thread(() => MonitoringLoop());
             m_thread.IsBackground = true;
             m_end = false;
             m_thread.Start();
+        }
+
+        private void OnMouseMoveEvent(object sender, MouseEventArgs e)
+        {
+            var area = chartPrivateBytes.ChartAreas[0];
+            if (m_cursorEnabled)
+            {
+                try
+                {
+                    //HitTestResult result = chartPrivateBytes.HitTest(e.X, e.Y);
+                    var pos = (int)area.AxisX.PixelPositionToValue(e.X);
+                    var bytes = (long)chartPrivateBytes.Series[0].Points[pos].YValues[0];
+                    //chartPrivateBytes.ChartAreas[0].CursorY.SetCursorPixelPosition(p, true);
+                    chartPrivateBytes.Series[0].ToolTip = Util.FormatBytes4(bytes);
+                }
+                catch (Exception)
+                {
+                    m_cursorEnabled = false;            
+                }
+            }
+
+            if (m_cursorEnabled)
+            {
+                System.Drawing.Point p = new System.Drawing.Point(e.X, e.Y);
+                area.CursorX.SetCursorPixelPosition(p, true);
+            }
+            else
+            {
+                System.Drawing.Point p = new System.Drawing.Point(0, 0);
+                area.CursorX.SetCursorPixelPosition(p, true);
+            }
         }
 
         private void OnClosedEvent(object sender, EventArgs e)
@@ -98,7 +134,7 @@ namespace ProcessMonitor
             }
         }
 
-        public void MonitoringLoop(string processname)
+        public void MonitoringLoop()
         {
             WaitHandle waitHandle = new AutoResetEvent(false);
             m_minimumY = m_process.Info.PrivateBytes;
@@ -247,6 +283,10 @@ namespace ProcessMonitor
             {
                 ClearTooltips();
             }
+            if (e.Button == System.Windows.Forms.MouseButtons.Left)
+            {
+                m_cursorEnabled = !m_cursorEnabled;
+            }
         }
 
         private void OnMouseDoubleClickEvent(object sender, MouseEventArgs e)
@@ -257,10 +297,22 @@ namespace ProcessMonitor
             var xVal = area.AxisX.PixelPositionToValue(pos.X);
             var yVal = area.AxisY.PixelPositionToValue(pos.Y);
 
-            // todo: lookup nearest real point on the graph and put a marker on it!
+            var datapoint = chartPrivateBytes.Series[0].Points[(int)xVal]; // nearest point on the graph
+            //datapoint.MarkerStyle = MarkerStyle.Circle;
+            //datapoint.MarkerSize = 5;
+            //datapoint.MarkerColor = System.Drawing.Color.Red;
+            var bytes = (long)datapoint.YValues[0];
+
+            //TextAnnotation a = new TextAnnotation();
+            //a.BackColor = 
+            //a.Text = Util.FormatBytes3(bytes);
+            //a.AnchorDataPoint = datapoint;
+            //a.AnchorAlignment = ContentAlignment.BottomRight;
+            //a.SmartLabelStyle.Enabled = false;
+            //chartPrivateBytes.Annotations.Add(a);
 
             ToolTip newtooltip = new ToolTip();
-            newtooltip.Show(Util.FormatBytes3((long)yVal), chartPrivateBytes, e.Location.X, e.Location.Y - 15);
+            newtooltip.Show(Util.FormatBytes3(bytes), chartPrivateBytes, e.Location.X, e.Location.Y - 15);
             tooltips.Add(newtooltip);
         }
 

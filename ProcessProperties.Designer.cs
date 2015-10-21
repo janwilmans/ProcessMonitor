@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataVisualization.Charting.ChartArea ChartHandles = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
+            System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
             System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
             System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
             System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
@@ -66,8 +66,8 @@
             // 
             // chartPrivateBytes
             // 
-            ChartHandles.Name = "ChartPrivateBytes";
-            this.chartPrivateBytes.ChartAreas.Add(ChartHandles);
+            chartArea1.Name = "ChartPrivateBytes";
+            this.chartPrivateBytes.ChartAreas.Add(chartArea1);
             this.chartPrivateBytes.Dock = System.Windows.Forms.DockStyle.Fill;
             legend1.Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Top;
             legend1.Name = "Legend1";
@@ -76,7 +76,7 @@
             this.chartPrivateBytes.Name = "chartPrivateBytes";
             this.chartPrivateBytes.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.SemiTransparent;
             series1.ChartArea = "ChartPrivateBytes";
-            series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
+            series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
             series1.Legend = "Legend1";
             series1.Name = "PrivateBytes";
             series1.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.UInt64;
@@ -116,7 +116,7 @@
             this.chartHandles.Name = "chartHandles";
             this.chartHandles.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Bright;
             series2.ChartArea = "ChartHandles";
-            series2.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.FastLine;
+            series2.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
             series2.Legend = "Legend1";
             series2.Name = "Handles";
             this.chartHandles.Series.Add(series2);
