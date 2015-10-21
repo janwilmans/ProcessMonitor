@@ -177,7 +177,22 @@ namespace ProcessMonitor
             }
             return isAdmin;
         }
-        
+
+        private static string GetPerformanceCounterProcessName(int pid)
+        {
+            var category = new PerformanceCounterCategory("Process");
+            var instances = category.GetInstanceNames();
+            foreach (var instance in instances)
+            {
+                var perf = new PerformanceCounter("Process", "ID Process", instance, true);
+                if (perf.RawValue == pid)
+                {
+                    return instance;
+                }
+            }
+            throw new Exception("No instance for pid " + pid + " found.");
+        }
+
     }
     
     static class Program
@@ -191,7 +206,7 @@ namespace ProcessMonitor
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm());
+            Application.Run(new ProcessTree());
         }
     }
 }

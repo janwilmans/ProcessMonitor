@@ -14,12 +14,12 @@ using BrightIdeasSoftware;
 
 namespace ProcessMonitor
 {
-    public partial class MainForm : Form
+    public partial class ProcessTree : Form
     {
         private List<ProcessInfo> m_processes = new List<ProcessInfo>();
         private TypedObjectListView<ProcessInfo> m_typedProcessTree;
 
-        public MainForm()
+        public ProcessTree()
         {
             InitializeComponent();
             m_typedProcessTree = new TypedObjectListView<ProcessInfo>(m_processTree);
@@ -66,15 +66,13 @@ namespace ProcessMonitor
         {
             ProcessInfo info = m_processTree.GetItem(m_processTree.SelectedIndex).RowObject as ProcessInfo;
             ProcessProperties props = new ProcessProperties(info);
-            props.Show();
+            props.Show(this);
         }
 
         private void OnKeyDownEvent(object sender, KeyEventArgs e)
         {
-            Trace.WriteLine("keeeey");
             if (e.KeyCode == Keys.F5)
             {
-                Trace.WriteLine("keeeey F5");
                 RefreshProcessList();
             }
         }
@@ -84,13 +82,7 @@ namespace ProcessMonitor
             m_processes.Clear();
             foreach (var process in Process.GetProcesses())
             {
-                ProcessInfo info = new ProcessInfo();
-                info.Name = process.ProcessName;
-                info.PID = process.Id;
-                //info.Owner = process.GetOwner();  // quite slow
-                info.PrivateBytes = process.PrivateMemorySize64;
-                info.Threads = process.Threads.Count;
-                info.Handles = process.HandleCount;
+                ProcessInfo info = new ProcessInfo(process);
                 try
                 {
                     info.MainModuleFilename = process.MainModule.FileName;
@@ -108,6 +100,39 @@ namespace ProcessMonitor
 
     public class ProcessInfo
     {
+        private Process m_process;
+
+        public ProcessInfo(Process process)
+        {
+            m_process = process;
+            UpdateValues();
+        }
+
+        public void Refresh()
+        {
+            m_process.Refresh();
+            UpdateValues();
+        }
+
+        private void UpdateValues()
+        {
+            Name = m_process.ProcessName;
+            PID = m_process.Id;
+            //Owner = process.GetOwner();  // quite slow
+            PrivateBytes = m_process.PrivateMemorySize64;
+            Threads = m_process.Threads.Count;
+            Handles = m_process.HandleCount;
+
+            try
+            {
+                MainModuleFilename = m_process.MainModule.FileName;
+            }
+            catch (Exception)
+            {
+                //info.MainModuleFilename = "<" + e.Message + ">";
+            }
+        }
+
         public string Name { get; set; }
         public int PID { get; set; }
         public long PrivateBytes { get; set; }

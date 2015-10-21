@@ -15,7 +15,7 @@ namespace ProcessMonitor
     public partial class ProcessProperties : Form
     {
         private Thread m_thread;
-        private ProcessMonitor m_monitor;
+        private ProcessMonitor m_process;
         private bool m_end;
         private AutoResetEvent m_event = new AutoResetEvent(false);
         private static long viewwidth = 180; // show three minutes of data
@@ -26,16 +26,10 @@ namespace ProcessMonitor
         private bool m_userzoom = false;
         private TextAnnotation m_annotation = new TextAnnotation();
 
-        public ProcessProperties(ProcessInfo info)
+        private void InitChart(Chart c)
         {
-            InitializeComponent();
-            chartPrivateBytes.Series[0].Name = "PrivateBytes";
-            //chartPrivateBytes.Annotations.Add(m_annotation);
-            this.Text = "Monitor [ " + info.Name + " ]";
-            m_status.Text = "Process: " + info.Name + ", PID: " + info.PID;
-
             // horizontal 
-            var axisX = chartPrivateBytes.ChartAreas[0].AxisX;
+            var axisX = c.ChartAreas[0].AxisX;
             axisX.MajorGrid.Enabled = true;
             axisX.MajorGrid.IntervalType = DateTimeIntervalType.Number;
             axisX.Interval = 10.0;
@@ -47,14 +41,27 @@ namespace ProcessMonitor
             axisX.LabelStyle.Interval = 60;
 
             // verical 
-            var axisY = chartPrivateBytes.ChartAreas[0].AxisY;
+            var axisY = c.ChartAreas[0].AxisY;
             axisY.MajorGrid.Enabled = true;
             axisY.MajorGrid.IntervalType = DateTimeIntervalType.Number;
             axisY.LabelStyle.Enabled = true;
             axisY.MajorTickMark.Enabled = false;
 
-            axisY.LabelStyle.Format = "FormatBytes";
-            chartPrivateBytes.FormatNumber += OnFormatNumberEvent;
+            c.FormatNumber += OnFormatNumberEvent;
+        }
+
+        public ProcessProperties(ProcessInfo info)
+        {
+            InitializeComponent();
+            chartPrivateBytes.Series[0].Name = "PrivateBytes";
+            //chartPrivateBytes.Annotations.Add(m_annotation);
+            this.Text = "Monitor [ " + info.Name + " ]";
+            m_status.Text = "Process: " + info.Name + ", PID: " + info.PID;
+
+            InitChart(chartPrivateBytes);
+            InitChart(chartHandles);
+
+            chartPrivateBytes.ChartAreas[0].AxisY.LabelStyle.Format = "FormatBytes";
 
             // events
             Closed += OnClosedEvent;
@@ -63,7 +70,7 @@ namespace ProcessMonitor
             chartPrivateBytes.MouseDoubleClick += OnMouseDoubleClickEvent;
             this.MouseWheel += new MouseEventHandler(OnMouseWheel);
             
-            m_monitor = ProcessMonitor.CreateProcessMonitor(info.PID);
+            m_process = ProcessMonitor.CreateProcessMonitor(info.PID);
             m_thread = new Thread(() => MonitoringLoop("foo"));
             m_thread.IsBackground = true;
             m_end = false;
@@ -80,21 +87,21 @@ namespace ProcessMonitor
 
         private void LogMemoryDeltas()
         {
-            var delta = m_monitor.GetPrivateBytesDelta();
+            var delta = m_process.PrivateBytesDelta;
             if (delta > 0)
             {
-                Log.WriteLine("[" + m_monitor.GetName() + "] allocated " + Util.FormatBytes3(delta));
+                Log.WriteLine("[" + m_process.Info.Name + "] allocated " + Util.FormatBytes3(delta));
             }
             else if (delta < 0)
             {
-                Log.WriteLine("[" + m_monitor.GetName() + "] released " + Util.FormatBytes3(delta));
+                Log.WriteLine("[" + m_process.Info.Name + "] released " + Util.FormatBytes3(delta));
             }
         }
 
         public void MonitoringLoop(string processname)
         {
             WaitHandle waitHandle = new AutoResetEvent(false);
-            m_minimumY = m_monitor.GetPrivateBytes();
+            m_minimumY = m_process.Info.PrivateBytes;
             m_maximumY = m_minimumY;
 
             int seconds = 0;
@@ -102,11 +109,10 @@ namespace ProcessMonitor
             {
                 for (; !m_end; )
                 {
-                    m_monitor.Refresh();
-                    var bytes = m_monitor.GetPrivateBytes();
+                    m_process.Refresh();
                     LogMemoryDeltas();
                     var s = seconds;    // keep s local to the lambda
-                    this.UIThreadAsync(() => ScrollChart(s, bytes));
+                    this.UIThreadAsync(() => ScrollChart(s));
                     seconds = seconds + 1;
                     m_event.WaitOne(1000);
                 }
@@ -118,19 +124,33 @@ namespace ProcessMonitor
             }
         }
 
-        private void ScrollChart(double seconds, double bytes)
+        private void ScrollChart(double seconds)
         {
             if (m_end) return;
 
-            var serie = chartPrivateBytes.Series[0];
-            Update(serie.Points, seconds, bytes);
+            {
+                var bytes = m_process.Info.PrivateBytes;
+                var serie = chartPrivateBytes.Series[0];
+                Update(serie.Points, seconds, bytes);
+                var area = chartPrivateBytes.ChartAreas[0];
+                // 'scroll' the view 1 position to the left
+                area.AxisX.Maximum = seconds;
+                area.AxisX.Minimum = area.AxisX.Maximum - viewwidth;
+                serie.Name = "Private Bytes: " + Util.FormatBytes4((long)bytes);
+            }
 
-            var area = chartPrivateBytes.ChartAreas[0];
-            // 'scroll' the view 1 position to the left
-            area.AxisX.Maximum = seconds;
-            area.AxisX.Minimum = area.AxisX.Maximum - viewwidth;
-            serie.Name = "Private Bytes: " + Util.FormatBytes4((long)bytes);
+            { 
+                var handles = m_process.Info.Handles;
+                var serie2 = chartHandles.Series[0];
+                Update(serie2.Points, seconds, handles);
+                var area2 = chartHandles.ChartAreas[0];
+                // 'scroll' the view 1 position to the left
+                area2.AxisX.Maximum = seconds;
+                area2.AxisX.Minimum = area2.AxisX.Maximum - viewwidth;
+                serie2.Name = "Handles: " + handles;
+            }
         }
+
 
         private bool UserZoom(double delta)
         {

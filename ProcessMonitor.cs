@@ -27,49 +27,33 @@ namespace ProcessMonitor
         }
 
         private Process m_process;
+        private ProcessInfo m_info;
         private long m_lastPrivateBytes;
         private long m_lastPrivateBytesDelta;
+
+        public ProcessInfo Info { get { return m_info; } }
+        public long PrivateBytesDelta { get { return m_lastPrivateBytesDelta; } }
+
         private PerformanceCounter m_cpucounter;
 
         public ProcessMonitor(Process p)
         {
             m_process = p;
-            GetPrivateBytes();
+            m_info = new ProcessInfo(p);
+            UpdateDeltas();
             //m_cpucounter = new PerformanceCounter("Processor", "% Processor Time", GetPerformanceCounterProcessName(m_process.Id), true);
         }
 
         public void Refresh()
         {
-            m_process.Refresh();
+            m_info.Refresh();
+            UpdateDeltas();
         }
 
-        public long GetPrivateBytes()
+        private void UpdateDeltas()
         {
-            //Log.WriteLine("PrivateMemorySize64: " + m_process.PrivateMemorySize64);
-
-            var bytes = m_process.PrivateMemorySize64;
-            m_lastPrivateBytesDelta = bytes - m_lastPrivateBytes;
-            m_lastPrivateBytes = bytes;
-            return bytes;
-        }
-
-        public string GetName()
-        {
-            return m_process.ProcessName;
-        }
-
-        public long GetPrivateBytesDelta()
-        {
-            return m_lastPrivateBytesDelta;
-        }
-
-        public long GetWorkingSet()
-        {
-            return m_process.WorkingSet64;
-        }
-        public long GetHandleCount()
-        {
-            return m_process.HandleCount;
+            m_lastPrivateBytesDelta = m_info.PrivateBytes - m_lastPrivateBytes;
+            m_lastPrivateBytes = m_info.PrivateBytes;
         }
 
         public float CPU()
@@ -77,21 +61,5 @@ namespace ProcessMonitor
             //return m_cpucounter.NextValue() / Environment.ProcessorCount;
             return 1.0f;
         }
-
-        private string GetPerformanceCounterProcessName(int pid)
-        {
-            var category = new PerformanceCounterCategory("Process");
-            var instances = category.GetInstanceNames();
-            foreach (var instance in instances)
-            {
-                var perf = new PerformanceCounter("Process", "ID Process", instance, true);
-                if (perf.RawValue == pid)
-                {
-                    return instance;
-                }
-            }
-            throw new Exception("No instance for pid " + pid + " found.");
-        }
-
     }
 }

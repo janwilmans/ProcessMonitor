@@ -1,6 +1,6 @@
 ﻿namespace ProcessMonitor
 {
-    partial class MainForm
+    partial class ProcessTree
     {
         /// <summary>
         /// Required designer variable.
