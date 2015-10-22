@@ -1,0 +1,2 @@
+Q: error MSB4062: The "Fody.WeavingTask" task could not be loaded from the assembly 
+A: https://github.com/Fody/Costura is missing, install Fody using NuGet, see Tools->NuGet Package Manager->Package Manager Console: enter: Install-Package Costura.Fody
