@@ -104,12 +104,15 @@ namespace ProcessMonitor
             if (m_cursorEnabled)
             {
                 System.Drawing.Point p = new System.Drawing.Point(e.X, e.Y);
+                area.CursorX.LineColor = Color.Red;
                 area.CursorX.SetCursorPixelPosition(p, true);
             }
             else
             {
                 System.Drawing.Point p = new System.Drawing.Point(0, 0);
-                area.CursorX.SetCursorPixelPosition(p, true);
+                area.CursorX.IsUserEnabled = false;
+                area.CursorX.IsUserSelectionEnabled = false;
+                area.CursorX.LineColor = Color.Transparent;
             }
         }
 
