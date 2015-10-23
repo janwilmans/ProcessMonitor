@@ -171,6 +171,8 @@ namespace ProcessMonitor
                 var bytes = m_process.Info.PrivateBytes;
                 var serie = chartPrivateBytes.Series[0];
                 Update(serie.Points, seconds, bytes);
+                m_lastY = bytes;
+
                 var area = chartPrivateBytes.ChartAreas[0];
                 // 'scroll' the view 1 position to the left
                 area.AxisX.Maximum = seconds;
@@ -260,7 +262,6 @@ namespace ProcessMonitor
                 points.RemoveAt(0);
             }
             points.AddXY(position, value);
-            m_lastY = value;
             AutoScaleY(value);
         }
 
