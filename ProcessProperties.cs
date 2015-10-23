@@ -177,7 +177,7 @@ namespace ProcessMonitor
                 // 'scroll' the view 1 position to the left
                 area.AxisX.Maximum = seconds;
                 area.AxisX.Minimum = area.AxisX.Maximum - viewwidth;
-                serie.Name = "Private Bytes: " + Util.FormatBytes4((long)bytes);
+                serie.Name = "Private Bytes: " + Util.FormatBytes2((long)bytes);
             }
 
             { 
@@ -225,22 +225,42 @@ namespace ProcessMonitor
             return perc;
         }
 
-        private void OnMouseWheel(object sender, MouseEventArgs e)
+        private void DoUserZoomStrategy1()
         {
             var axisY = chartPrivateBytes.ChartAreas[0].AxisY;
+            double perc = ConvertZoomLevelToPercentage(m_zoomLevel);
+            var last = m_lastY;
+            var min = last * (1.0 - perc);
+            var max = last * (1.0 + perc);
+            SetYRange(min, max);
+        }
+
+        private void DoUserZoomStrategy2()
+        {
+            var area = chartPrivateBytes.ChartAreas[0];
+
+            var last = (long) m_lastY;
+            var zoombase = Util.NextPow2(last) / 2;
+            var spacing = zoombase / Math.Pow(2, m_zoomLevel);
+            spacing = Math.Max(spacing, 128);
+
+            area.AxisY.Minimum = last - (3 * spacing);
+            area.AxisY.Maximum = last + (3 * spacing);
+            area.AxisY.Interval = spacing;
+            area.AxisY.IntervalOffset = -1 * (spacing / 2);
+            area.AxisY.LabelStyle.Format = "RelativeBytes";
+        }
+
+        private void OnMouseWheel(object sender, MouseEventArgs e)
+        {
             if (UserZoom(e.Delta))
             {
-                double perc = ConvertZoomLevelToPercentage(m_zoomLevel);
-                var last = m_lastY; //.RoundUp((long)m_lastY, 8 * 1024);
-                var min = last * (1.0 - perc);
-                var max = last * (1.0 + perc);
-                SetYRange(min, max);
-                //axisY.LabelStyle.Format = "RelativeBytes";
+                DoUserZoomStrategy1();
             }
             else
             {
                 AutoScaleY(m_lastY);
-                axisY.LabelStyle.Format = "FormatBytes";
+                chartPrivateBytes.ChartAreas[0].AxisY.LabelStyle.Format = "FormatBytes";
             }
         }
 
@@ -252,7 +272,6 @@ namespace ProcessMonitor
             var interval = (area.AxisY.Maximum - area.AxisY.Minimum) / 4;
             var powInterval = Util.NextPow2((long) interval);
             chartPrivateBytes.ChartAreas[0].AxisY.Interval = powInterval;
-            //chartPrivateBytes.ChartAreas[0].AxisY.IntervalOffset = 2 * powInterval;
         }
 
         private void Update(DataPointCollection points, double position, double value)
@@ -339,7 +358,7 @@ namespace ProcessMonitor
                     var height = chartPrivateBytes.ChartAreas[0].AxisY.Maximum - chartPrivateBytes.ChartAreas[0].AxisY.Minimum;
                     long position = (long) (e.Value);
                     long relativePos = (long) (position - m_lastY);
-                    var bytes = Util.FormatBytes2(relativePos);
+                    var bytes = Util.FormatBytes4(relativePos);
                     if (relativePos == 0)
                     {
                         e.LocalizedValue = Util.FormatBytes2(position);

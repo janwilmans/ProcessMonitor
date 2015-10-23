@@ -88,7 +88,6 @@ namespace ProcessMonitor
         public static long NextPow2(long value)
         {
             return (long)Math.Pow(2, Math.Ceiling(Math.Log(value) / Math.Log(2)));
-
         }
 
         public static readonly ReadOnlyCollection<string> units = new ReadOnlyCollection<string>(
