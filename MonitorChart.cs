@@ -27,12 +27,14 @@ namespace ProcessMonitor
         private DataPointCollection m_points;
         private Axis m_axisX;
         private Axis m_axisY;
-        Dictionary<int, List<Annotation>> m_annotations;
+        private Dictionary<int, List<Annotation>> m_annotations;
+        private LegendItem m_legendItem;
 
         public delegate string FormatValueEventDelegate(double value);
         public FormatValueEventDelegate FormatValueEvent;
         public string LabelFormatAuto;
         public string LabelFormatZoomed;
+        
 
         public MonitorChart(Chart c, string name)
         {
@@ -84,6 +86,23 @@ namespace ProcessMonitor
             m_chart.MouseDoubleClick += OnMouseDoubleClickEvent;
             m_chart.MouseMove += OnMouseMoveEvent;
 
+            m_chart.ApplyPaletteColors();
+
+            m_chart.Legends.Clear();
+            Legend legend = new Legend();
+            m_chart.Legends.Add(legend);
+            //legend.BackGradientStyle = GradientStyle.TopBottom;
+            //legend.BackColor = Color.Red;
+            //legend.BorderColor = Color.Black;
+            legend.Docking = Docking.Top;
+            
+            m_legendItem = new LegendItem();
+            m_legendItem.ImageStyle = LegendImageStyle.Line;
+            m_legendItem.BorderWidth = 2;
+            m_legendItem.Color = m_chart.Series[0].Color;
+            m_legendItem.Name = m_name;
+            legend.CustomItems.Add(m_legendItem);
+
             //c.Series[0].ToolTip = "#VALX, #VALY";
             // https://bitbucket.org/grumly57/mschartfriend
         }
@@ -107,7 +126,9 @@ namespace ProcessMonitor
             m_axisX.Maximum = m_seconds;
             m_axisX.Minimum = m_axisX.Maximum - viewwidth;
 
-            //serie.Name = m_name + ": " + FormatValueEvent(value);     //todo: cant change the name of the series?? (dbgmsgsrc /1 causes exception)
+            // changing the name of m_chart.Series[0].Name very quickly causes exceptions, appearently the name is internally used as a key.
+            // so instead, we are using a custom legend.
+            m_legendItem.Name = m_name + ": " + FormatValueEvent(value);
             m_minimumY = Math.Min(m_minimumY, value);
             m_maximumY = Math.Max(m_maximumY, value);
             m_seconds = m_seconds + 1;

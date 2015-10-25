@@ -29,10 +29,8 @@
         private void InitializeComponent()
         {
             System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea1 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend1 = new System.Windows.Forms.DataVisualization.Charting.Legend();
             System.Windows.Forms.DataVisualization.Charting.Series series1 = new System.Windows.Forms.DataVisualization.Charting.Series();
             System.Windows.Forms.DataVisualization.Charting.ChartArea chartArea2 = new System.Windows.Forms.DataVisualization.Charting.ChartArea();
-            System.Windows.Forms.DataVisualization.Charting.Legend legend2 = new System.Windows.Forms.DataVisualization.Charting.Legend();
             System.Windows.Forms.DataVisualization.Charting.Series series2 = new System.Windows.Forms.DataVisualization.Charting.Series();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.m_status = new System.Windows.Forms.ToolStripStatusLabel();
@@ -69,15 +67,12 @@
             chartArea1.Name = "ChartPrivateBytes";
             this.chartPrivateBytes.ChartAreas.Add(chartArea1);
             this.chartPrivateBytes.Dock = System.Windows.Forms.DockStyle.Fill;
-            legend1.Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Top;
-            legend1.Name = "Legend1";
-            this.chartPrivateBytes.Legends.Add(legend1);
             this.chartPrivateBytes.Location = new System.Drawing.Point(0, 0);
             this.chartPrivateBytes.Name = "chartPrivateBytes";
             this.chartPrivateBytes.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.SemiTransparent;
             series1.ChartArea = "ChartPrivateBytes";
             series1.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series1.Legend = "Legend1";
+            series1.IsVisibleInLegend = false;
             series1.Name = "PrivateBytes";
             series1.XValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.UInt64;
             series1.YValueType = System.Windows.Forms.DataVisualization.Charting.ChartValueType.UInt64;
@@ -109,15 +104,12 @@
             chartArea2.Name = "ChartHandles";
             this.chartHandles.ChartAreas.Add(chartArea2);
             this.chartHandles.Dock = System.Windows.Forms.DockStyle.Fill;
-            legend2.Docking = System.Windows.Forms.DataVisualization.Charting.Docking.Top;
-            legend2.Name = "Legend1";
-            this.chartHandles.Legends.Add(legend2);
             this.chartHandles.Location = new System.Drawing.Point(0, 0);
             this.chartHandles.Name = "chartHandles";
             this.chartHandles.Palette = System.Windows.Forms.DataVisualization.Charting.ChartColorPalette.Bright;
             series2.ChartArea = "ChartHandles";
             series2.ChartType = System.Windows.Forms.DataVisualization.Charting.SeriesChartType.Line;
-            series2.Legend = "Legend1";
+            series2.IsVisibleInLegend = false;
             series2.Name = "Handles";
             this.chartHandles.Series.Add(series2);
             this.chartHandles.Size = new System.Drawing.Size(824, 228);
