@@ -93,7 +93,7 @@ namespace ProcessMonitor
         public static readonly ReadOnlyCollection<string> units = new ReadOnlyCollection<string>(
           new string[] { "bytes", "kB", "MB", "GB", "TB", "PB", "EB", null });
 
-        public static string FormatBytes(long bytes)
+        public static string FormatBytes(long bytes)        // shortest notation, like '12 MB'
         {
             long absValue = Math.Abs(bytes);
             const int kb = 1024;
@@ -107,7 +107,7 @@ namespace ProcessMonitor
             return string.Format("{0} {1}", absValue, units[index]);
         }
 
-        public static string FormatBytes2(long bytes)
+        public static string FormatBytes2(long bytes)       // more accuracy for numbers up to 16 like '12005 kB'
         {
             long absValue = Math.Abs(bytes);
             const int kb = 1024;
@@ -122,7 +122,7 @@ namespace ProcessMonitor
             return string.Format("{0} {1}", absValue, units[index]);
         }
 
-        public static string FormatBytes3(long bytes)
+        public static string FormatBytes3(long bytes)       // more accuracy for numbers up to 64 like '64005 kB'
         {
             long absValue = Math.Abs(bytes);
             const int kb = 1024;
@@ -140,15 +140,17 @@ namespace ProcessMonitor
         public static string FormatBytes4(long bytes)
         {
             long absValue = Math.Abs(bytes);
+            double accValue = absValue;
             const int kb = 1024;
             int index = 0;
 
             while ((absValue / kb) > 0 && units[index] != null)
             {
                 absValue = absValue / kb;
+                accValue = accValue / kb;
                 ++index;
             }
-            return string.Format("{0:f2} {1}", absValue, units[index]);
+            return string.Format("{0:f2} {1}", accValue, units[index]);
         }
 
         public static void Sort<T, U>(this List<T> list, Func<T, U> expression)

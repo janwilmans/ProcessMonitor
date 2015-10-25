@@ -27,7 +27,11 @@ namespace ProcessMonitor
             InitializeComponent();
 
             m_privateBytesChart = new MonitorChart(chartPrivateBytes, "PrivateBytes");
+            m_privateBytesChart.SetByteFormatting();
+            m_privateBytesChart.FormatValueEvent += ((value) => { return Util.FormatBytes4((long)value); });
+
             m_handleChart = new MonitorChart(chartHandles, "Handle count");
+            m_privateBytesChart.FormatValueEvent += ((value) => { return Util.FormatBytes4((long)value); });
 
             this.Text = "Monitor [ " + info.Name + " ]";
             m_status.Text = "Process: " + info.Name + ", PID: " + info.PID;
