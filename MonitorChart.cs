@@ -21,7 +21,6 @@ namespace ProcessMonitor
         private string m_name;
         private bool m_userzoom = false;
         private long m_zoomLevel = 1;
-        private bool m_byteformatting;   // todo move formatting out of class
 
         private ChartArea m_area;
         private Series m_series;
@@ -32,6 +31,8 @@ namespace ProcessMonitor
 
         public delegate string FormatValueEventDelegate(double value);
         public FormatValueEventDelegate FormatValueEvent;
+        public string LabelFormatAuto;
+        public string LabelFormatZoomed;
 
         public MonitorChart(Chart c, string name)
         {
@@ -54,11 +55,6 @@ namespace ProcessMonitor
             ClearTooltips();
         }
 
-        public void SetByteFormatting()
-        {
-            m_byteformatting = true;
-        }
-
         private void Init()
         {
             // horizontal 
@@ -77,7 +73,7 @@ namespace ProcessMonitor
             m_axisY.MajorGrid.IntervalType = DateTimeIntervalType.Number;
             m_axisY.LabelStyle.Enabled = true;
             m_axisY.MajorTickMark.Enabled = false;
-            m_axisY.LabelStyle.Format = "FormatBytes";
+            m_axisY.LabelStyle.Format = LabelFormatAuto;
 
             m_chart.FormatNumber += OnFormatNumberEvent;
             m_chart.MouseWheel += OnMouseWheelEvent;
@@ -111,14 +107,7 @@ namespace ProcessMonitor
             m_axisX.Maximum = m_seconds;
             m_axisX.Minimum = m_axisX.Maximum - viewwidth;
 
-            if (m_byteformatting)
-            {
-                serie.Name = m_name + ": " + Util.FormatBytes4((long)value);
-            }
-            else
-            {
-                serie.Name = m_name + ": " + value;
-            }
+            //serie.Name = m_name + ": " + FormatValueEvent(value);     //todo: cant change the name of the series?? (dbgmsgsrc /1 causes exception)
             m_minimumY = Math.Min(m_minimumY, value);
             m_maximumY = Math.Max(m_maximumY, value);
             m_seconds = m_seconds + 1;
@@ -134,7 +123,7 @@ namespace ProcessMonitor
             else
             {
                 SetAutoRange(0, Util.NextPow2((long)(m_maximumY * 1.25))); // at least +25% at the top
-                m_axisY.LabelStyle.Format = "FormatBytes";
+                m_axisY.LabelStyle.Format = LabelFormatAuto;
             }
         }
 
@@ -178,13 +167,13 @@ namespace ProcessMonitor
             var last = (long)m_newestValue;
             var zoombase = Util.NextPow2(last) / 2;
             var spacing = zoombase / Math.Pow(2, m_zoomLevel);
-            spacing = Math.Max(spacing, 128);
+            spacing = Math.Max(spacing, 2);
 
-            m_axisY.Minimum = last - (3 * spacing);
-            m_axisY.Maximum = last + (3 * spacing);
+            m_axisY.Minimum = last - (2 * spacing);
+            m_axisY.Maximum = last + (2 * spacing);
             m_axisY.Interval = spacing;
             m_axisY.IntervalOffset = -1 * (spacing / 2);
-            m_axisY.LabelStyle.Format = "RelativeBytes";
+            m_axisY.LabelStyle.Format = LabelFormatZoomed;
         }
 
         private List<ToolTip> tooltips = new List<ToolTip>();
@@ -246,7 +235,6 @@ namespace ProcessMonitor
         {
             var offset = m_points[0].XValue;
             var valueX = (int) (m_axisX.PixelPositionToValue(x) - offset);
-            //Log.WriteLine("x: " + x + ", offset: " + offset + ", valueX: " + valueX);
             return m_points[valueX]; // nearest point on the graph
         }
 
@@ -255,14 +243,15 @@ namespace ProcessMonitor
             dp.MarkerStyle = MarkerStyle.Circle;
             dp.MarkerSize = 5;
             dp.MarkerColor = Color.Red;
-            var bytes = (long)dp.YValues[0];
+            var value = (long)dp.YValues[0];
 
             CalloutAnnotation a = new CalloutAnnotation();
             a.AllowMoving = true;
             a.AllowSelecting = true;
             a.BackColor = Color.BlanchedAlmond;
-            a.Text = Util.FormatBytes3(bytes);
+            a.Text = FormatValueEvent(value);
             a.AnchorDataPoint = dp;
+            a.AllowTextEditing = true;
             m_chart.Annotations.Add(a);
 
             int key = (int)dp.XValue;
@@ -277,35 +266,50 @@ namespace ProcessMonitor
         {
             if (m_annotations.ContainsKey(x))
             {
-                foreach (var a in m_annotations[x])
-                {
-                    m_chart.Annotations.Remove(a);
-                }
+                RemoveMarkers(m_annotations[x]);
                 m_annotations.Remove(x);
             }
+        }
+
+        private void RemoveMarkers(List<Annotation> list)
+        {
+            foreach (var a in list)
+            {
+                m_chart.Annotations.Remove(a);
+            }
+        }
+
+        private void RemoveMarkers()
+        {
+            foreach (var p in m_series.Points)
+            {
+                RemoveMarkers((int)p.XValue);
+                p.MarkerStyle = MarkerStyle.None;
+            }
+            m_annotations.Clear();
         }
 
         private void OnMouseClickEvent(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Right)
             {
-                ClearTooltips();
-            }
-            if (e.Button == MouseButtons.Left)
-            {
+                RemoveMarkers();
             }
         }
 
         private void OnMouseDoubleClickEvent(object sender, MouseEventArgs e)
         {
-            try
+            if (e.Button == MouseButtons.Left)
             {
-                var datapoint = GetNearestPointByX(e.X);
-                AddMarker(datapoint);
-            }
-            catch (System.ArgumentOutOfRangeException)
-            {
-                // ignore negative indices
+                try
+                {
+                    var datapoint = GetNearestPointByX(e.X);
+                    AddMarker(datapoint);
+                }
+                catch (System.ArgumentOutOfRangeException)
+                {
+                    // ignore negative indices
+                }
             }
         }
 
@@ -328,7 +332,7 @@ namespace ProcessMonitor
                     var height = m_axisY.Maximum - m_axisY.Minimum;
                     long position = (long)(e.Value);
                     long relativePos = (long)(position - m_newestValue);
-                    var bytes = Util.FormatBytes4(relativePos);
+                    var bytes = Util.FormatBytes(relativePos);
                     if (relativePos == 0)
                     {
                         e.LocalizedValue = Util.FormatBytes2(position);

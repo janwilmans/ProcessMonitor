@@ -27,11 +27,12 @@ namespace ProcessMonitor
             InitializeComponent();
 
             m_privateBytesChart = new MonitorChart(chartPrivateBytes, "PrivateBytes");
-            m_privateBytesChart.SetByteFormatting();
-            m_privateBytesChart.FormatValueEvent += ((value) => { return Util.FormatBytes4((long)value); });
+            m_privateBytesChart.FormatValueEvent = ((value) => { return Util.FormatBytes2((long)value); });
+            m_privateBytesChart.LabelFormatAuto = "FormatBytes";
+            m_privateBytesChart.LabelFormatZoomed = "RelativeBytes";
 
             m_handleChart = new MonitorChart(chartHandles, "Handle count");
-            m_privateBytesChart.FormatValueEvent += ((value) => { return Util.FormatBytes4((long)value); });
+            m_handleChart.FormatValueEvent = ((value) => { return string.Format("{0}", (long)value); });
 
             this.Text = "Monitor [ " + info.Name + " ]";
             m_status.Text = "Process: " + info.Name + ", PID: " + info.PID;
@@ -57,7 +58,7 @@ namespace ProcessMonitor
                     LogMemoryDeltas();
                     this.UIThreadAsync(() => UpdateValues());
                     // todo: we should actually wait for UpdateValues() to return, but then a OnClose waiting for m_thread.Join() deadlocks, find a better solution
-                    m_event.WaitOne(100);
+                    m_event.WaitOne(1000);
                 }
             }
             catch (Exception e)
