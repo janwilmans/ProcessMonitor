@@ -18,6 +18,9 @@ namespace ProcessMonitor
     {
         private List<ProcessInfo> m_processes = new List<ProcessInfo>();
         private TypedObjectListView<ProcessInfo> m_typedProcessTree;
+        private AutoResetEvent m_event = new AutoResetEvent(false); 
+        private Thread m_thread;
+        private bool m_end;
 
         public ProcessTree()
         {
@@ -59,7 +62,29 @@ namespace ProcessMonitor
             //    return new ArrayList();
             //};
 
-            RefreshProcessList();
+            InitProcessList();
+            m_thread = new Thread(() => MonitoringLoop());
+            m_thread.IsBackground = true;
+            m_end = false;
+            m_thread.Start();
+        }
+
+        public void MonitoringLoop()
+        {
+            WaitHandle waitHandle = new AutoResetEvent(false);
+            try
+            {
+                for (; !m_end; )
+                {
+                    RefreshProcessList();
+                    m_event.WaitOne(1000);
+                }
+            }
+            catch (Exception e)
+            {
+                Log.WriteLine(e.ToString());
+                m_end = true;
+            }
         }
 
         private void OnDoubleClickEvent(object sender, EventArgs e)
@@ -77,25 +102,54 @@ namespace ProcessMonitor
             }
         }
 
-        public void RefreshProcessList()
+        public void InitProcessList()
         {
             m_processes.Clear();
             foreach (var process in Process.GetProcesses())
             {
                 ProcessInfo info = new ProcessInfo(process);
-                try
-                {
-                    info.MainModuleFilename = process.MainModule.FileName;
-                }
-                catch (Exception)
-                {
-                    //info.MainModuleFilename = "<" + e.Message + ">";
-                }
                 m_processes.Add(info);
             }
-            m_processes.Sort(x => x.Name);
+            m_processes = m_processes.OrderBy(x => x.Name).ToList();
             this.m_processTree.SetObjects(m_processes);
         }
+
+        public void RefreshProcessList()
+        {
+            //Stopwatch st = Stopwatch.StartNew();
+
+            List<ProcessInfo> processes = new List<ProcessInfo>();
+            Dictionary<int, Process> processMap = new Dictionary<int,Process>();
+            foreach (var process in Process.GetProcesses())
+            {
+                processMap.Add(process.Id, process);
+            }
+
+            foreach (var process in m_processes)
+            {
+                if (processMap.Remove(process.PID))
+                {
+                    processes.Add(process); // still alive 
+                }
+            }
+
+            foreach (var process in processes)
+            {
+                process.Refresh();
+            }
+
+            foreach (var entry in processMap)
+            {
+                processes.Add(new ProcessInfo(entry.Value));
+            }
+
+            m_processes = processes;
+            m_processes = m_processes.OrderBy(x => x.Name).ToList();    // stable sort
+            this.m_processTree.SetObjects(m_processes);
+            //st.Stop();
+            //Log.WriteLine("RefreshProcessList took " + st.Elapsed.TotalMilliseconds + " ms ");
+        }
+
     }
 
     public class ProcessInfo
@@ -118,7 +172,7 @@ namespace ProcessMonitor
         {
             Name = m_process.ProcessName;
             PID = m_process.Id;
-            Owner = m_process.GetOwner();
+            //Owner = m_process.GetOwner(); // takes ~5 seconds!?
 
             try
             {
