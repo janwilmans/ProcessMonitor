@@ -105,7 +105,7 @@ namespace ProcessMonitor
         public ProcessInfo(Process process)
         {
             m_process = process;
-            UpdateValues();
+            InitValues();
         }
 
         public void Refresh()
@@ -114,14 +114,11 @@ namespace ProcessMonitor
             UpdateValues();
         }
 
-        private void UpdateValues()
+        private void InitValues()
         {
             Name = m_process.ProcessName;
             PID = m_process.Id;
-            //Owner = process.GetOwner();  // quite slow
-            PrivateBytes = m_process.PrivateMemorySize64;
-            Threads = m_process.Threads.Count;
-            Handles = m_process.HandleCount;
+            Owner = m_process.GetOwner();
 
             try
             {
@@ -131,13 +128,22 @@ namespace ProcessMonitor
             {
                 //info.MainModuleFilename = "<" + e.Message + ">";
             }
+            UpdateValues();
+        }
+
+
+        private void UpdateValues()
+        {
+            PrivateBytes = m_process.PrivateMemorySize64;
+            Threads = m_process.Threads.Count;
+            Handles = m_process.HandleCount;
         }
 
         public string Name { get; set; }
         public int PID { get; set; }
         public long PrivateBytes { get; set; }
         public string Memory { get { return Util.FormatBytes4(PrivateBytes); } }
-        //public string Owner { get; set; }
+        public string Owner { get; set; }
         public long Threads { get; set; }
         public long Handles { get; set; }
         public string MainModuleFilename { get; set; }
