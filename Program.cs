@@ -78,17 +78,38 @@ namespace ProcessMonitor
             List<WMIProcessInfo> list = new List<WMIProcessInfo>();
             string query = "Select * From Win32_Process";
             ManagementObjectSearcher searcher = new ManagementObjectSearcher(query);
-            ManagementObjectCollection processList = searcher.Get();
-
-            foreach (ManagementObject obj in processList)
+            foreach (ManagementObject obj in searcher.Get())
             {
-                WMIProcessInfo info = new WMIProcessInfo();
-                string[] argList = new string[] { string.Empty, string.Empty };
-                int returnVal = Convert.ToInt32(obj.InvokeMethod("GetOwner", argList));
-                if (returnVal == 0)
+                try
                 {
-                    info.Owner = argList[1] + "\\" + argList[0];    // return DOMAIN\user
+
+                    WMIProcessInfo info = new WMIProcessInfo();
+                    int id = 0;
+                    if (Int32.TryParse(obj["ProcessId"].ToString(), out id))
+                    {
+                        info.Id = id;
+                    }
+
+                    string[] argList = new string[] { string.Empty, string.Empty };
+                    int returnVal = Convert.ToInt32(obj.InvokeMethod("GetOwner", argList));
+                    if (returnVal == 0)
+                    {
+                        // return DOMAIN\user
+                        info.Owner = argList[1] + "\\" + argList[0];
+                    }
+
+                    var cmdline = obj["CommandLine"];
+                    if (cmdline != null)
+                    {
+                        info.Commandline = cmdline.ToString();
+                    }
+                
                     list.Add(info);
+                    Log.WriteLine(string.Format("id: {0}, Owner: {1}, Cmd: {2} ", info.Id, info.Owner, info.Commandline));
+                }
+                catch (Exception e)
+                {
+                    Log.WriteLine(e.ToString());
                 }
             }
             return list;

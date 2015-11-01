@@ -146,7 +146,12 @@ namespace ProcessMonitor
             var processList = Util.GetWMIProcesesInfo();
             foreach (var wmiInfo in processList)
             {
-                Log.WriteLine(wmiInfo.Owner);
+                ProcessInfo info = null;
+                if (m_processes.TryGetValue(wmiInfo.Id, out info))
+                {
+                    info.Owner = wmiInfo.Owner;
+                    info.Path = wmiInfo.Commandline;
+                }
             }
             st.Stop();
             Log.WriteLine("AddExpensiveInfo took " + st.Elapsed.TotalMilliseconds + " ms ");
@@ -156,7 +161,9 @@ namespace ProcessMonitor
 
     public class WMIProcessInfo
     {
+        public int Id;
         public string Owner;
+        public string Commandline;
     };
 
     public class ProcessInfo
@@ -179,17 +186,15 @@ namespace ProcessMonitor
         {
             Name = m_process.ProcessName;
             PID = m_process.Id;
-            //Owner = m_process.GetOwner(); // WMI query/slow ~5 seconds
-
             try
             {
-                MainModuleFilename = m_process.MainModule.FileName;         // m_process.GetCommandLine(); // WMI query/slow
+                Path = m_process.MainModule.FileName;
                 Name = System.IO.Path.GetFileName(m_process.MainModule.FileName);
             }
             catch (Exception)
             {
                 //MainModuleFilename = "<" + e.Message + ">";
-                MainModuleFilename = "System process";
+                Path = "System process";
             }
             UpdateValues();
         }
@@ -209,7 +214,7 @@ namespace ProcessMonitor
         public string Owner { get; set; }
         public long Threads { get; set; }
         public long Handles { get; set; }
-        public string MainModuleFilename { get; set; }
+        public string Path { get; set; }
     }
 
 }

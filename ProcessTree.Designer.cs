@@ -35,10 +35,11 @@
             this.olvPrivateBytes = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
             this.olvThreads = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
             this.olvHandles = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
-            this.olvPath = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
             this.m_statusStrip = new System.Windows.Forms.StatusStrip();
             this.m_toolstrip = new System.Windows.Forms.ToolStripStatusLabel();
             this.panel1 = new System.Windows.Forms.Panel();
+            this.olvOwner = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
+            this.olvPath = ((BrightIdeasSoftware.OLVColumn)(new BrightIdeasSoftware.OLVColumn()));
             ((System.ComponentModel.ISupportInitialize)(this.m_processTree)).BeginInit();
             this.m_statusStrip.SuspendLayout();
             this.panel1.SuspendLayout();
@@ -51,6 +52,7 @@
             this.m_processTree.AllColumns.Add(this.olvPrivateBytes);
             this.m_processTree.AllColumns.Add(this.olvThreads);
             this.m_processTree.AllColumns.Add(this.olvHandles);
+            this.m_processTree.AllColumns.Add(this.olvOwner);
             this.m_processTree.AllColumns.Add(this.olvPath);
             this.m_processTree.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.olvProcess,
@@ -58,13 +60,14 @@
             this.olvPrivateBytes,
             this.olvThreads,
             this.olvHandles,
+            this.olvOwner,
             this.olvPath});
             this.m_processTree.Dock = System.Windows.Forms.DockStyle.Fill;
             this.m_processTree.Location = new System.Drawing.Point(0, 0);
             this.m_processTree.Name = "m_processTree";
             this.m_processTree.OwnerDraw = true;
             this.m_processTree.ShowGroups = false;
-            this.m_processTree.Size = new System.Drawing.Size(756, 519);
+            this.m_processTree.Size = new System.Drawing.Size(935, 479);
             this.m_processTree.TabIndex = 0;
             this.m_processTree.UseCompatibleStateImageBehavior = false;
             this.m_processTree.View = System.Windows.Forms.View.Details;
@@ -106,19 +109,13 @@
             this.olvHandles.Text = "Handles";
             this.olvHandles.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
-            // olvPath
-            // 
-            this.olvPath.AspectName = "Value.MainModuleFilename";
-            this.olvPath.FillsFreeSpace = true;
-            this.olvPath.Text = "Path";
-            // 
             // m_statusStrip
             // 
             this.m_statusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.m_toolstrip});
-            this.m_statusStrip.Location = new System.Drawing.Point(0, 519);
+            this.m_statusStrip.Location = new System.Drawing.Point(0, 479);
             this.m_statusStrip.Name = "m_statusStrip";
-            this.m_statusStrip.Size = new System.Drawing.Size(756, 22);
+            this.m_statusStrip.Size = new System.Drawing.Size(935, 22);
             this.m_statusStrip.TabIndex = 1;
             // 
             // m_toolstrip
@@ -133,14 +130,25 @@
             this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.panel1.Location = new System.Drawing.Point(0, 0);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(756, 519);
+            this.panel1.Size = new System.Drawing.Size(935, 479);
             this.panel1.TabIndex = 2;
+            // 
+            // olvOwner
+            // 
+            this.olvOwner.AspectName = "Value.Owner";
+            this.olvOwner.Text = "Owner";
+            // 
+            // olvPath
+            // 
+            this.olvPath.AspectName = "Value.Path";
+            this.olvPath.FillsFreeSpace = true;
+            this.olvPath.Text = "Path";
             // 
             // ProcessTree
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(756, 541);
+            this.ClientSize = new System.Drawing.Size(935, 501);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.m_statusStrip);
             this.Name = "ProcessTree";
@@ -161,11 +169,12 @@
         private BrightIdeasSoftware.OLVColumn olvPrivateBytes;
         private BrightIdeasSoftware.OLVColumn olvThreads;
         private BrightIdeasSoftware.OLVColumn olvHandles;
-        private BrightIdeasSoftware.OLVColumn olvPath;
         private System.Windows.Forms.StatusStrip m_statusStrip;
         private BrightIdeasSoftware.OLVColumn olvPID;
         private System.Windows.Forms.ToolStripStatusLabel m_toolstrip;
         private System.Windows.Forms.Panel panel1;
+        private BrightIdeasSoftware.OLVColumn olvOwner;
+        private BrightIdeasSoftware.OLVColumn olvPath;
 
 
 
