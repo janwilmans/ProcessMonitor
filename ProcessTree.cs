@@ -111,12 +111,12 @@ namespace ProcessMonitor
                 m_processes.Add(info.PID, info);
             }
             this.m_processTree.SetObjects(m_processes);
-            //this.m_processTree.Sort(olvProcess, SortOrder.Ascending);
+            this.m_processTree.Sort(olvProcess, SortOrder.Ascending);
         }
 
         public void RefreshProcessList()
         {
-            Stopwatch st = Stopwatch.StartNew();
+            //Stopwatch st = Stopwatch.StartNew();
 
             var map = new Dictionary<int, ProcessInfo>();
             foreach (var process in Process.GetProcesses())
@@ -135,13 +135,13 @@ namespace ProcessMonitor
 
             m_processes = map;
             this.m_processTree.SetObjects(m_processes);
-            st.Stop();
-            Log.WriteLine("RefreshProcessList took " + st.Elapsed.TotalMilliseconds + " ms ");
+            //st.Stop();
+            //Log.WriteLine("RefreshProcessList took " + st.Elapsed.TotalMilliseconds + " ms ");    // typically < 100ms.
         }
 
         private void AddExpensiveInfo()
         {
-            Stopwatch st = Stopwatch.StartNew();
+            //Stopwatch st = Stopwatch.StartNew();
 
             var processList = Util.GetWMIProcesesInfo();
             foreach (var wmiInfo in processList)
@@ -153,8 +153,8 @@ namespace ProcessMonitor
                     info.Path = wmiInfo.Commandline;
                 }
             }
-            st.Stop();
-            Log.WriteLine("AddExpensiveInfo took " + st.Elapsed.TotalMilliseconds + " ms ");
+            //st.Stop();
+            //Log.WriteLine("AddExpensiveInfo took " + st.Elapsed.TotalMilliseconds + " ms ");  // typically ~1 second!
         }
 
     }
