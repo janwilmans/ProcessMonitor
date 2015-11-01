@@ -52,7 +52,7 @@ namespace ProcessMonitor
             return "<not found>";
         }
 
-        private static string GetCommandLine(this Process process)
+        public static string GetCommandLine(this Process process)
         {
             var commandLine = new StringBuilder(process.MainModule.FileName);
 
@@ -72,6 +72,28 @@ namespace ProcessMonitor
 
     public static class Util
     {
+
+        public static List<WMIProcessInfo> GetWMIProcesesInfo()
+        {
+            List<WMIProcessInfo> list = new List<WMIProcessInfo>();
+            string query = "Select * From Win32_Process";
+            ManagementObjectSearcher searcher = new ManagementObjectSearcher(query);
+            ManagementObjectCollection processList = searcher.Get();
+
+            foreach (ManagementObject obj in processList)
+            {
+                WMIProcessInfo info = new WMIProcessInfo();
+                string[] argList = new string[] { string.Empty, string.Empty };
+                int returnVal = Convert.ToInt32(obj.InvokeMethod("GetOwner", argList));
+                if (returnVal == 0)
+                {
+                    info.Owner = argList[1] + "\\" + argList[0];    // return DOMAIN\user
+                    list.Add(info);
+                }
+            }
+            return list;
+        }
+
         public static long RoundUp(long numToRound, long multiple)
         {
             if (multiple == 0)

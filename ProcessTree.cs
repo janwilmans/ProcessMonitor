@@ -16,7 +16,7 @@ namespace ProcessMonitor
 {
     public partial class ProcessTree : Form
     {
-        private List<ProcessInfo> m_processes = new List<ProcessInfo>();
+        private Dictionary<int, ProcessInfo> m_processes = new Dictionary<int, ProcessInfo>();
         private TypedObjectListView<ProcessInfo> m_typedProcessTree;
         private AutoResetEvent m_event = new AutoResetEvent(false); 
         private Thread m_thread;
@@ -36,9 +36,9 @@ namespace ProcessMonitor
             m_processTree.FullRowSelect = true;
             m_processTree.RowFormatter = delegate(OLVListItem olvi)
             {
-                ProcessInfo info = (ProcessInfo)olvi.RowObject;
+                var pair = (KeyValuePair<int, ProcessInfo>)olvi.RowObject;
                 olvi.UseItemStyleForSubItems = false;
-                if (info.PrivateBytes > 100*1024*1024)
+                if (pair.Value.PrivateBytes > 100 * 1024 * 1024)
                 {
                     olvi.SubItems[2].ForeColor = Color.Red;
                 }
@@ -98,7 +98,7 @@ namespace ProcessMonitor
         {
             if (e.KeyCode == Keys.F5)
             {
-                RefreshProcessList();
+                AddExpensiveInfo();
             }
         }
 
@@ -108,49 +108,56 @@ namespace ProcessMonitor
             foreach (var process in Process.GetProcesses())
             {
                 ProcessInfo info = new ProcessInfo(process);
-                m_processes.Add(info);
+                m_processes.Add(info.PID, info);
             }
-            m_processes = m_processes.OrderBy(x => x.Name).ToList();
             this.m_processTree.SetObjects(m_processes);
+            //this.m_processTree.Sort(olvProcess, SortOrder.Ascending);
         }
 
         public void RefreshProcessList()
         {
-            //Stopwatch st = Stopwatch.StartNew();
+            Stopwatch st = Stopwatch.StartNew();
 
-            List<ProcessInfo> processes = new List<ProcessInfo>();
-            Dictionary<int, Process> processMap = new Dictionary<int,Process>();
+            var map = new Dictionary<int, ProcessInfo>();
             foreach (var process in Process.GetProcesses())
             {
-                processMap.Add(process.Id, process);
-            }
-
-            foreach (var process in m_processes)
-            {
-                if (processMap.Remove(process.PID))
+                ProcessInfo info = null;
+                if (m_processes.TryGetValue(process.Id, out info))
                 {
-                    processes.Add(process); // still alive 
+                    map.Add(process.Id, info);
+                    info.Refresh();     // existing ProcessInfo, just refresh
+                }
+                else
+                {
+                    map.Add(process.Id, new ProcessInfo(process));
                 }
             }
 
-            foreach (var process in processes)
-            {
-                process.Refresh();
-            }
-
-            foreach (var entry in processMap)
-            {
-                processes.Add(new ProcessInfo(entry.Value));
-            }
-
-            m_processes = processes;
-            m_processes = m_processes.OrderBy(x => x.Name).ToList();    // stable sort
+            m_processes = map;
             this.m_processTree.SetObjects(m_processes);
-            //st.Stop();
-            //Log.WriteLine("RefreshProcessList took " + st.Elapsed.TotalMilliseconds + " ms ");
+            st.Stop();
+            Log.WriteLine("RefreshProcessList took " + st.Elapsed.TotalMilliseconds + " ms ");
+        }
+
+        private void AddExpensiveInfo()
+        {
+            Stopwatch st = Stopwatch.StartNew();
+
+            var processList = Util.GetWMIProcesesInfo();
+            foreach (var wmiInfo in processList)
+            {
+                Log.WriteLine(wmiInfo.Owner);
+            }
+            st.Stop();
+            Log.WriteLine("AddExpensiveInfo took " + st.Elapsed.TotalMilliseconds + " ms ");
         }
 
     }
+
+    public class WMIProcessInfo
+    {
+        public string Owner;
+    };
 
     public class ProcessInfo
     {
@@ -172,15 +179,17 @@ namespace ProcessMonitor
         {
             Name = m_process.ProcessName;
             PID = m_process.Id;
-            //Owner = m_process.GetOwner(); // takes ~5 seconds!?
+            //Owner = m_process.GetOwner(); // WMI query/slow ~5 seconds
 
             try
             {
-                MainModuleFilename = m_process.MainModule.FileName;
+                MainModuleFilename = m_process.MainModule.FileName;         // m_process.GetCommandLine(); // WMI query/slow
+                Name = System.IO.Path.GetFileName(m_process.MainModule.FileName);
             }
             catch (Exception)
             {
-                //info.MainModuleFilename = "<" + e.Message + ">";
+                //MainModuleFilename = "<" + e.Message + ">";
+                MainModuleFilename = "System process";
             }
             UpdateValues();
         }
