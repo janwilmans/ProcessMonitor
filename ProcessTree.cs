@@ -87,9 +87,15 @@ namespace ProcessMonitor
             }
         }
 
+        public static ProcessInfo GetInfo(Object obj)
+        {
+            var pair = (System.Collections.Generic.KeyValuePair<int, ProcessInfo>) obj;
+            return pair.Value;
+        }
+
         private void OnDoubleClickEvent(object sender, EventArgs e)
         {
-            ProcessInfo info = m_processTree.GetItem(m_processTree.SelectedIndex).RowObject as ProcessInfo;
+            var info = GetInfo(m_processTree.GetItem(m_processTree.SelectedIndex).RowObject);
             ProcessProperties props = new ProcessProperties(info);
             props.Show(this);
         }
